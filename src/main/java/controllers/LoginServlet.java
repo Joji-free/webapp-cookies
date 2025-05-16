@@ -1,4 +1,9 @@
 package controllers;
+/*
+* User: ander
+  Date: 15/5/2025
+  Time: 20:32
+* */
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
@@ -11,53 +16,76 @@ import java.io.PrintWriter;
 import java.util.Arrays;
 import java.util.Optional;
 
+// Definición del Servlet que manejará las rutas /login y /login.html
 @WebServlet({"/login", "/login.html"})
 public class LoginServlet extends HttpServlet {
+    // Credenciales fijas para autenticación (en producción usar base de datos)
     final static String USERNAME = "admin";
     final static String PASSWORD = "12345";
 
+    // Método para manejar solicitudes GET (cuando se accede a la página)
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+
+        // Obtener todas las cookies del request, si no hay crear arreglo vacío
         Cookie[] cookies = req.getCookies() != null ? req.getCookies() : new Cookie[0];
 
-        // Busco en el arreglo de cookies si existe la cookie solicitada
+        // Buscar la cookie llamada "username" usando Streams de Java
         Optional<String> cookieOptional = Arrays.stream(cookies)
-                .filter(c -> "username".equals(c.getName()))
-                .map(Cookie::getValue)
-                .findAny();
+                .filter(c -> "username".equals(c.getName()))  // Filtrar por nombre de cookie
+                .map(Cookie::getValue)  // Obtener solo el valor de la cookie
+                .findAny();  // Tomar la primera coincidencia
 
+        // Si existe la cookie (usuario ya autenticado)
         if (cookieOptional.isPresent()) {
+            // Configurar tipo de contenido de la respuesta
             resp.setContentType("text/html;charset=UTF-8");
+
+            // Usar try-with-resources para manejo automático del PrintWriter
             try (PrintWriter out = resp.getWriter()) {
+                // Generar HTML de respuesta dinámicamente
                 out.print("<!DOCTYPE html>");
                 out.println("<html>");
                 out.println("<head>");
-                out.println("<meta charset=\"utf-8\">");
-                out.println("<title>Bienvenido</title>");
+                out.println("<meta charset=\"utf-8\">");  // Especificar encoding
+                out.println("<title>Bienvenido</title>");  // Título de la pestaña
                 out.println("</head>");
                 out.println("<body>");
-                out.println("<h1>Hola " + cookieOptional.get() + " ya iniciaste sesión anteriormente!</h1>");
-                out.println("<p><a href='" + req.getContextPath() + "/index.html'>Volver al inicio</a></p>");
+                // Mostrar mensaje personalizado con el nombre de usuario
+                out.println("<h1>Hola "+ cookieOptional.get()+" ya iniciaste sesión anteriormente!</h1>");
+                // Enlace para volver al inicio
+                out.println("<p><a href='index.html'>Volver al inicio</a></p>");
                 out.println("</body>");
                 out.println("</html>");
             }
         } else {
-            getServletContext().getRequestDispatcher("/Login.jsp").forward(req, resp);
+            // Si no hay cookie, mostrar el formulario de login (JSP)
+            getServletContext().getRequestDispatcher("/login.jsp").forward(req, resp);
         }
     }
 
+    // Método para manejar solicitudes POST (envío del formulario de login)
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+            throws ServletException, IOException {
+
+        // Obtener parámetros del formulario
         String username = req.getParameter("username");
         String password = req.getParameter("password");
 
+        // Validar credenciales
         if (username.equals(USERNAME) && password.equals(PASSWORD)) {
-            // Creamos la cookie
+            // Si son válidas, crear cookie de autenticación
             Cookie usernameCookie = new Cookie("username", username);
+            // Añadir cookie a la respuesta
             resp.addCookie(usernameCookie);
 
+            // Configurar tipo de contenido
+            resp.setContentType("text/html;charset=UTF-8");
+
+            // Generar página de bienvenida
             try (PrintWriter out = resp.getWriter()) {
-                resp.setContentType("text/html;charset=UTF-8");
                 out.print("<!DOCTYPE html>");
                 out.println("<html>");
                 out.println("<head>");
@@ -69,7 +97,11 @@ public class LoginServlet extends HttpServlet {
                 out.println("</body>");
                 out.println("</html>");
             }
+
+            // Redirigir a la página de login (mostrará mensaje de bienvenida)
+            resp.sendRedirect("login.html");
         } else {
+            // Si credenciales son inválidas, enviar error HTTP 401 (No autorizado)
             resp.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Lo sentimos no tiene acceso");
         }
     }

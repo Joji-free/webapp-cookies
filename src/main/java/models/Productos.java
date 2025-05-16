@@ -1,5 +1,9 @@
 package models;
-
+/*
+* User: ander
+  Date: 15/5/2025
+  Time: 20:32
+* */
 public class Productos {
     private Long idProducto;
     private String nombreProducto;
